@@ -1,16 +1,15 @@
-
-
-
-
+import http
 import time
 import argparse
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib import colors as mcolors
-matplotlib.use('TkAgg')
+try:
+    from neopixel import *
+except:
+    from neopixel_stub import *
 
 import font454
+from flask import Flask, request
+app = Flask(__name__)
+
 
 # LED strip configuration:
 LED_PIN = 18  # GPIO pin connected to the pixels (18 uses PWM!).
@@ -22,48 +21,6 @@ LED_INVERT = False  # True to invert the signal (when using NPN transistor level
 LED_CHANNEL = 0  # set to '1' for GPIOs 13, 19, 41, 45 or 53
 
 
-def Color(red, green, blue, white = 0):
-    """Convert the provided red, green, blue color to a 24-bit color value.
-    Each color component should be a value 0-255 where 0 is the lowest intensity
-    and 255 is the highest intensity.
-    """
-    return (white << 24) | (red << 16)| (green << 8) | blue
-
-
-class Adafruit_NeoPixel:
-    def __init__(self, columns, rows, pin, freq_hz=800000, dma=10, invert=False,
-             brightness=255, channel=0):
-        self.columns = columns
-        self.rows = rows
-        self.led_matrix = np.zeros(shape=(rows, columns))
-        #self.fig = plt.figure()
-        #self.ax = self.fig.subplots()
-        #self.fig, self.ax = plt.subplots()
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(1,1,1)
-        plt.ion()
-        plt.show()
-        self.show()
-        time.sleep(1)
-
-    def begin(self):
-        pass
-
-    def numPixels(self):
-        return self.columns * self.rows
-
-    def setPixelColor(self, i, color):
-        x = i % self.columns
-        y = i // self.columns
-        #print('set pixel ' + str(x)  + ' ' + str(y) + ' to color ' + str(color))
-        self.led_matrix[y,x] = color
-
-    def show(self):
-        self.ax.clear()
-        self.ax.imshow(self.led_matrix, cmap=plt.get_cmap("PiYG", 7))
-        self.fig.canvas.draw()
-
-
 class LEDLamp:
     def __init__(self, rows, columns, color=Color(255, 255, 255)):
         self.rows = rows
@@ -73,6 +30,7 @@ class LEDLamp:
                                        invert=LED_INVERT, brightness=LED_BRIGHTNESS, channel=LED_CHANNEL)
         self.strip.begin()
         self.state = 'off' # off/all/indirect
+
 
     def setMatrixPixelColor(self, x, y, color):
         self.strip.setPixelColor(x + y * self.columns, color)
@@ -177,40 +135,91 @@ class LEDLamp:
             time.sleep(duration_s)
             self._restoreState()
 
-
     def showTime(self):
         t = time.strftime('%H:%M')
         self.rotateText(t, rounds=1)
-
 
     def showDate(self):
         d = time.strftime('%a, %d %b %Y')
         self.rotateText(d, rounds=1)
 
 
+@app.route("/all")
+def all():
+    lamp.all()
+    return ('', http.HTTPStatus.NO_CONTENT)
+
+
+@app.route("/indirect")
+def indirect():
+    lamp.indirect()
+    return ('', http.HTTPStatus.NO_CONTENT)
+
+
+@app.route("/toggle")
+def toggle():
+    lamp.toggleState()
+    return ('', http.HTTPStatus.NO_CONTENT)
+
+
+@app.route("/off")
+def off():
+    lamp.off()
+    return ('', http.HTTPStatus.NO_CONTENT)
+
+
+@app.route("/state")
+def state():
+    return (lamp.state, http.HTTPStatus.OK)
+
+
+@app.route("/date")
+def showDate():
+    lamp.showDate()
+    return ('', http.HTTPStatus.NO_CONTENT)
+
+
+@app.route("/time")
+def showTime():
+    lamp.showTime()
+    return ('', http.HTTPStatus.NO_CONTENT)
+
+
+@app.route("/text")
+def text():
+    t = request.args.get('t', default = "Hi Sebastian", type = str)
+    lamp.rotateText(t)
+    return ('', http.HTTPStatus.NO_CONTENT)
+
+
 if __name__ == '__main__':
     # Process arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--clear', action='store_true', help='clear the display on exit')
+    parser.add_argument('-r', '--rows', default=7, type=int)
+    parser.add_argument('-c', '--columns', default=30, type=int)
+    parser.add_argument('-p', '--port', default=55443, type=int)
     args = parser.parse_args()
 
-    lamp = LEDLamp(rows=7, columns=30, color=10)
-
-    print('Press Ctrl-C to quit.')
-    if not args.clear:
-        print('Use "-c" argument to clear LEDs on exit')
-
+    lamp = LEDLamp(rows=args.rows, columns=args.columns, color=Color(255, 255, 255))
     try:
-        lamp.indirect(color=3)
+        app.run(port=args.port)
+    except:
+        lamp.off()
+
+    #print('Press Ctrl-C to quit.')
+    #if not args.clear:
+    #    print('Use "-c" argument to clear LEDs on exit')
+
+    #try:
+    #    lamp.indirect(color=3)
         #time.sleep(2)
-        lamp.all()
+    #    lamp.all()
         #time.sleep(2)
         #lamp.colorWipe(color=Color(100,50,200), wait_ms=10)
-        lamp.rotateText("Hello", color=2, bg_color=0, rounds=1)
+    #    lamp.rotateText("Hello", color=2, bg_color=0, rounds=1)
         #lamp.showDate()
-        time.sleep(5)
+    #    time.sleep(5)
 
-    except KeyboardInterrupt:
-        if args.clear:
-            lamp.colorWipe(Color(0, 0, 0), 1)
-
+    #except KeyboardInterrupt:
+    #    if args.clear:
+    #        lamp.colorWipe(Color(0, 0, 0), 1)
