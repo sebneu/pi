@@ -19,18 +19,18 @@
 {% block content %}
   <div class="ui segments">
     <div class="ui segment">
-            <h1 class="ui center header" id="color-picker"></h1>
+            <h1 class="ui center header" style="font-size: 4.12em;" id="color-picker"></h1>
     </div>
 
     <div class="ui segment">
         <div class="ui grid">
-            <div class="four wide column">
-                <div class="fluid ui label">
+            <div class="five wide column">
+                <div class="fluid ui huge label">
                   <i class="sun icon"></i> Brightness
                 </div>
             </div>
 
-            <div class="twelve wide column">
+            <div class="eleven wide column">
                 <div class="slidecontainer">
                   <input type="range" min="1" max="255" value="{{ data.brightness }}" class="slider" id="brightness">
                 </div>
@@ -40,13 +40,13 @@
 
     <div class="ui segment">
         <div class="ui grid">
-            <div class="four wide column">
-                <div class="fluid ui label">
+            <div class="five wide column">
+                <div class="fluid ui huge label">
                   <i class="lightbulb outline icon"></i> Power
                 </div>
             </div>
                 <!-- Rounded switch -->
-            <div class="twelve wide column">
+            <div class="right floated four wide column">
                 <label class="switch">
                   <input type="checkbox" id="power">
                   <span class="toggle round"></span>
@@ -65,11 +65,14 @@
     picker.enter();
     picker.on("change", function(color) {
         container.parentNode.style.backgroundColor = '#' + color;
-        $.get( "set?hexcolor="+color, function( data ) {
+        if ($('#power').is(":checked"))
+        {
+            $.get( "set?hexcolor="+color, function( data ) {
 
-        }).fail(function() {
-            console.log( "error setting color" );
-        });
+            }).fail(function() {
+                console.log( "error setting color" );
+            });
+        }
     });
 
     // brightness slider
