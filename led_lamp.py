@@ -232,9 +232,19 @@ def set():
     return ('', http.NO_CONTENT)
 
 
+def getHexColor():
+    c = lamp.color
+    w = c >> 24
+    c = c - (w << 24)
+    r = c >> 16
+    c = c - (r << 16)
+    g = c >> 8
+    b = c - (g << 8)
+    return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+
 @app.route("/")
 def home():
-    return render_template("home.html", data={'power': 'off' if lamp.state == 'off' else 'on', 'brightness': lamp.getBrightness(), 'color': lamp.color})
+    return render_template("home.html", data={'power': 'off' if lamp.state == 'off' else 'on', 'brightness': lamp.getBrightness(), 'hexcolor': getHexColor()})
 
 
 if __name__ == '__main__':
