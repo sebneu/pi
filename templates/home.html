@@ -62,8 +62,8 @@
     var container = document.querySelector('#color-picker'),
         picker = new CP(container, false, container);
     picker.self.classList.add('static');
-    picker.set(CP.HEX2RGB('{{ data.hexcolor }}'));
     picker.enter();
+    picker.set(CP.HEX2RGB('{{ data.hexcolor }}'));
 
     picker.on("change", function(color) {
         container.parentNode.style.backgroundColor = '#' + color;

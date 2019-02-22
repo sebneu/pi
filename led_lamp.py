@@ -240,7 +240,7 @@ def getHexColor():
     c = c - (r << 16)
     g = c >> 8
     b = c - (g << 8)
-    return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+    return '{:02x}{:02x}{:02x}'.format(r, g, b)
 
 @app.route("/")
 def home():
