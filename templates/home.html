@@ -63,7 +63,10 @@
         picker = new CP(container, false, container);
     picker.self.classList.add('static');
     picker.enter();
-    picker.set(CP.HEX2RGB('{{ data.hexcolor }}'));
+    console.log(CP.HEX2HSV('{{ data.hexcolor }}'));
+    console.log(CP.HEX2RGB('{{ data.hexcolor }}'));
+
+    picker.set(CP.HEX2HSV('{{ data.hexcolor }}'));
 
     picker.on("change", function(color) {
         container.parentNode.style.backgroundColor = '#' + color;
