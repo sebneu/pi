@@ -32,6 +32,12 @@ class Adafruit_NeoPixel:
     def begin(self):
         pass
 
+    def setBrightness(self, b):
+        pass
+
+    def getBrightness(self):
+        return 255
+
     def numPixels(self):
         return self.columns * self.rows
 

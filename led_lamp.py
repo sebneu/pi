@@ -1,13 +1,25 @@
-import http
 import time
 import argparse
+
 try:
-    from neopixel import *
+    from rpi_ws281x import *
 except:
     from neopixel_stub import *
 
+
+try:
+    # Python 3
+    import http.client as http
+except:
+    # Python 2
+    import httplib as http
+
+import numpy as np
 import font454
-from flask import Flask, request
+from matplotlib import colors as mcolors
+COLORS = mcolors.get_named_colors_mapping()
+
+from flask import Flask, request, render_template
 app = Flask(__name__)
 
 
@@ -31,7 +43,6 @@ class LEDLamp:
         self.strip.begin()
         self.state = 'off' # off/all/indirect
 
-
     def setMatrixPixelColor(self, x, y, color):
         self.strip.setPixelColor(x + y * self.columns, color)
 
@@ -41,6 +52,13 @@ class LEDLamp:
             self.strip.setPixelColor(i, color)
             self.strip.show()
             time.sleep(wait_ms / 1000.0)
+
+    def setBrightness(self, b):
+        self.strip.setBrightness(b)
+        self._show()
+
+    def getBrightness(self):
+        return self.strip.getBrightness()
 
     def _show(self):
         self.strip.show()
@@ -74,6 +92,7 @@ class LEDLamp:
         self.state = 'all'
 
     def indirect(self, color=None):
+        self.off()
         if color:
             self.color = color
         for col in range(self.columns):
@@ -86,7 +105,7 @@ class LEDLamp:
         if not color:
             color = self.color
         text_length = 5 * len(text)
-        buffer = np.zeros(shape=(text_length, self.rows))
+        buffer = np.zeros(shape=(text_length, self.rows), dtype=int)
         font454.text(buffer, text, color=color, x0=0, y0=1)
 
         offset = -self.columns
@@ -111,12 +130,11 @@ class LEDLamp:
             time.sleep(wait_ms / 1000.0)
         self._restoreState()
 
-
     def showText(self, text, color=None, bg_color=Color(0, 0, 0), duration_s=10):
         if color:
             self.color = color
         text_length = 5 * len(text)
-        buffer = np.zeros(shape=(text_length, self.rows))
+        buffer = np.zeros(shape=(text_length, self.rows), dtype=int)
         font454.text(buffer, text, color=self.color, x0=0, y0=1)
 
         start = max(self.columns//2 - text_length, 0)
@@ -143,53 +161,80 @@ class LEDLamp:
         d = time.strftime('%a, %d %b %Y')
         self.rotateText(d, rounds=1)
 
-
 @app.route("/all")
 def all():
     lamp.all()
-    return ('', http.HTTPStatus.NO_CONTENT)
+    return ('', http.NO_CONTENT)
 
 
 @app.route("/indirect")
 def indirect():
     lamp.indirect()
-    return ('', http.HTTPStatus.NO_CONTENT)
+    return ('', http.NO_CONTENT)
 
 
 @app.route("/toggle")
 def toggle():
     lamp.toggleState()
-    return ('', http.HTTPStatus.NO_CONTENT)
+    return ('', http.NO_CONTENT)
 
 
 @app.route("/off")
 def off():
     lamp.off()
-    return ('', http.HTTPStatus.NO_CONTENT)
+    return ('', http.NO_CONTENT)
 
 
 @app.route("/state")
 def state():
-    return (lamp.state, http.HTTPStatus.OK)
-
+    return (lamp.state, http.OK)
 
 @app.route("/date")
 def showDate():
     lamp.showDate()
-    return ('', http.HTTPStatus.NO_CONTENT)
+    return ('', http.NO_CONTENT)
 
 
 @app.route("/time")
 def showTime():
     lamp.showTime()
-    return ('', http.HTTPStatus.NO_CONTENT)
+    return ('', http.NO_CONTENT)
 
 
 @app.route("/text")
 def text():
     t = request.args.get('t', default = "Hi Sebastian", type = str)
     lamp.rotateText(t)
-    return ('', http.HTTPStatus.NO_CONTENT)
+    return ('', http.NO_CONTENT)
+
+
+@app.route("/set")
+def set():
+    b = request.args.get('brightness')
+    if b and 0 <= int(b) <= 255:
+        lamp.setBrightness(int(b))
+
+    c = request.args.get('color')
+    if c:
+        if c in COLORS:
+            color = COLORS[c]
+            color = color.lstrip('#')
+            r,g,b = tuple(int(color[i:i+2], 16) for i in (0, 2 ,4))
+            lamp.all(color=Color(r,g,b))
+        else:
+            return ('Color not found', http.NOT_FOUND)
+
+    hc = request.args.get('hexcolor')
+    if hc:
+        r,g,b = tuple(int(hc[i:i+2], 16) for i in (0, 2 ,4))
+        lamp.all(color=Color(r,g,b))
+
+    return ('', http.NO_CONTENT)
+
+
+@app.route("/")
+def home():
+    return render_template("home.html", data={'power': 'off' if lamp.state == 'off' else 'on', 'brightness': lamp.getBrightness(), 'color': lamp.color})
 
 
 if __name__ == '__main__':
@@ -203,23 +248,6 @@ if __name__ == '__main__':
     lamp = LEDLamp(rows=args.rows, columns=args.columns, color=Color(255, 255, 255))
     try:
         app.run(port=args.port)
-    except:
+    except KeyboardInterrupt:
         lamp.off()
 
-    #print('Press Ctrl-C to quit.')
-    #if not args.clear:
-    #    print('Use "-c" argument to clear LEDs on exit')
-
-    #try:
-    #    lamp.indirect(color=3)
-        #time.sleep(2)
-    #    lamp.all()
-        #time.sleep(2)
-        #lamp.colorWipe(color=Color(100,50,200), wait_ms=10)
-    #    lamp.rotateText("Hello", color=2, bg_color=0, rounds=1)
-        #lamp.showDate()
-    #    time.sleep(5)
-
-    #except KeyboardInterrupt:
-    #    if args.clear:
-    #        lamp.colorWipe(Color(0, 0, 0), 1)

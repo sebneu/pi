@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <title>LED Control</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='semantic/semantic.min.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}">
+
+    <script
+            src="https://code.jquery.com/jquery-3.1.1.min.js"
+            integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+            crossorigin="anonymous">
+    </script>
+    <script src="{{ url_for('static', filename='semantic/semantic.min.js')}}"></script>
+
+    <style>
+      .main.container {
+        margin-top: 7em;
+      }
+    </style>
+{% block styles %}{% endblock %}
+</head>
+<body>
+      <div class="ui fixed inverted menu">
+        <div class="ui container">
+          <a href="#" class="header item">
+            <i class="lightbulb icon"></i>
+            LED Control
+          </a>
+        </div>
+      </div>
+    <div class="ui main text container">
+        <h1 class="ui header">{% block header %}{% endblock %}</h1>
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        {% block script %} {% endblock %}
+    </script>
+</body>
+</html>

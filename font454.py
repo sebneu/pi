@@ -29,7 +29,7 @@ def text(buffer, string, x0=0, y0=0, color=0xffff, bgcolor=0, colors=None):
         row = y0
         index *= 6
         for byte in font[index:index + 6]:
-            unsalted = byte ^ _SALT
+            unsalted = ord(byte) ^ _SALT
             for col in range(x, x + 4):
                 color = colors[unsalted & 0x03]
                 if color is not None:
